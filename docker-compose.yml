@@ -1,0 +1,33 @@
+# ============================================
+# FlorAccess ecosystem.
+#
+# No service is defined here: each repository owns the production docker-compose.yml
+# next to its code, and this file assembles them.
+#
+# Every file comes from the "main" branch, which is the latest final release: the CI of
+# each repository publishes a release on every merge to main. Git has no reference to
+# "the latest release" itself, and Compose can only include from a git reference.
+#
+# docker-compose.override.yml holds what links the repositories together.
+# Docker Compose loads it automatically.
+#
+# project_directory gives each repository its own folder in env/: this is where the
+# ".env" and the "secrets/" of its docker-compose.yml are read from.
+# ============================================
+
+name: floraccess
+
+include:
+  # No project_directory here: its ./dynamic folder ships with the repository, so relative
+  # paths must stay relative to it. Only its .env is read from env/.
+  - path: https://github.com/FloRobart/floraccess-proxy.git#main:docker-compose.yml
+    env_file: ./env/proxy/.env
+
+  - path: https://github.com/FloRobart/floraccess-database.git#main:docker-compose.yml
+    project_directory: ./env/database
+
+  - path: https://github.com/FloRobart/floraccess-api.git#main:docker-compose.yml
+    project_directory: ./env/api
+
+  - path: https://github.com/FloRobart/floraccess-app.git#main:docker-compose.yml
+    project_directory: ./env/app

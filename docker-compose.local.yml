@@ -1,0 +1,36 @@
+# Overlay for a trial of the production stack on a workstation: replaces Traefik with
+# ports on 127.0.0.1, and the public addresses with local ones. Never used in production.
+
+services:
+  # A profile that is never enabled keeps these services out of the trial
+  traefik:
+    profiles:
+      - disabled
+  traefik-certificates-init:
+    profiles:
+      - disabled
+
+  floraccess-api:
+    ports:
+      - 127.0.0.1:26001:80
+    environment:
+      BASE_URL: http://localhost:26001
+      # The administration panel of this trial, and the web application of an Econoris trial
+      CORS_ALLOWED_ORIGINS: http://localhost:26007,http://localhost:26003
+
+  floraccess-app:
+    ports:
+      - 127.0.0.1:26007:8080
+    volumes:
+      - type: bind
+        source: ./config/app-runtime.local.env
+        target: /usr/share/nginx/html/assets/.env
+        read_only: true
+
+networks:
+  # Docker can only publish a port through a network with a gateway. In production,
+  # these two networks have none, because only Traefik talks to these services.
+  floraccess-api-net:
+    internal: false
+  floraccess-app-net:
+    internal: false

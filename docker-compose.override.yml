@@ -1,0 +1,34 @@
+# What links the repositories together: no repository can declare it in its own
+# docker-compose.yml, which must stay valid without the others.
+
+services:
+  traefik:
+    # One network per exposed service: Traefik reaches each of them, but they cannot reach each other
+    networks:
+      - floraccess-api-net
+      - floraccess-app-net
+
+  floraccess-api:
+    environment:
+      # Its own role, created by floraccess-api-role of floraccess-database: it can only read and write
+      # the rows of the tables. Forced here, so that an older env/api/.env cannot keep the owner.
+      DB_USER: floraccess_api
+
+    depends_on:
+      # A failed migration keeps the API from starting on an outdated schema
+      floraccess-migrate:
+        condition: service_completed_successfully
+
+      # The role of the API must exist, with the password of its secret, before the API connects
+      floraccess-api-role:
+        condition: service_completed_successfully
+
+      # The API checks the database when it starts. After a restart of the database,
+      # its pool of connections reconnects by itself: the API does not need to restart with it.
+      floraccess-database:
+        condition: service_healthy
+
+secrets:
+  # The password of the role of the API: floraccess-api-role applies the same file in PostgreSQL
+  api_db_password:
+    file: ./env/database/secrets/api_db_password
